@@ -27,8 +27,8 @@ namespace slacky
 		Url(Url && other) noexcept;
 		~Url() noexcept = default;
 
-		Url & operator=(const Url & other);
-		Url & operator=(Url && other) noexcept;
+		Url & operator=(const Url & other) = delete;
+		Url & operator=(Url && other) = delete;
 
 		std::wstring Host() const
 		{

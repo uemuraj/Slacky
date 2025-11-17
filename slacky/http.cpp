@@ -74,40 +74,11 @@ namespace slacky
 
 	Url::Url(const Url & other) : URL_COMPONENTS(kDefaultUrlComponents), m_url(other.m_url)
 	{
-		if (!::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this))
-		{
-			throw std::system_error(::GetLastError(), std::system_category(), "WinHttpCrackUrl");
-		}
+		::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this);
 	}
 
 	Url::Url(Url && other) noexcept : URL_COMPONENTS(kDefaultUrlComponents), m_url(std::move(other.m_url))
 	{
 		::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this);
-	}
-
-	Url & Url::operator=(const Url & other)
-	{
-		if (this != &other)
-		{
-			m_url = other.m_url;
-			// Reset URL_COMPONENTS base and recompute pointers into m_url
-			static_cast<URL_COMPONENTS &>(*this) = kDefaultUrlComponents;
-			if (!::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this))
-			{
-				throw std::system_error(::GetLastError(), std::system_category(), "WinHttpCrackUrl");
-			}
-		}
-		return *this;
-	}
-
-	Url & Url::operator=(Url && other) noexcept
-	{
-		if (this != &other)
-		{
-			m_url = std::move(other.m_url);
-			static_cast<URL_COMPONENTS &>(*this) = kDefaultUrlComponents;
-			::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this);
-		}
-		return *this;
 	}
 }

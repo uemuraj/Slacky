@@ -50,22 +50,4 @@ namespace slacky
 		EXPECT_STREQ(moved.Host().c_str(), L"move.example.com");
 		EXPECT_STREQ(moved.Path().c_str(), L"/abc");
 	}
-
-	TEST(Url, CopyAssignment)
-	{
-		Url a(L"https://a.example.com/x");
-		Url b(L"https://b.example.com/y");
-		a = b;
-		EXPECT_STREQ(a.Host().c_str(), L"b.example.com");
-		EXPECT_STREQ(a.Path().c_str(), L"/y");
-	}
-
-	TEST(Url, MoveAssignment)
-	{
-		Url a(L"https://a.example.com/x");
-		Url b(L"https://b.example.com/y");
-		a = std::move(b);
-		EXPECT_STREQ(a.Host().c_str(), L"b.example.com");
-		EXPECT_STREQ(a.Path().c_str(), L"/y");
-	}
 }
