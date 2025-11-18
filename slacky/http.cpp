@@ -109,6 +109,11 @@ namespace slacky
 
 	void Request::Send(const wchar_t * headers, void * content, uint32_t size)
 	{
+		if (headers && !*headers)
+		{
+			headers = nullptr;
+		}
+
 		if (!::WinHttpSendRequest(m_handle, headers, -1, content, size, size, 0))
 		{
 			throw std::system_error(::GetLastError(), std::system_category(), "WinHttpSendRequest");

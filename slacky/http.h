@@ -20,36 +20,6 @@ namespace slacky
 	std::u8string ConvertFrom(std::wstring_view wstr);
 
 
-	// URL を保持するクラス：
-	//
-	// * コンストラクタで渡した文字列の URL を複製して保持する。
-	// * URL_COMPONENTS 構造体を継承しており URL の各要素を取得するメソッドを提供する。
-	//
-	class Url : protected URL_COMPONENTS
-	{
-		std::wstring m_url;
-
-	public:
-		Url(std::wstring_view url);
-		Url(const Url & other);
-		Url(Url && other) noexcept;
-		~Url() noexcept = default;
-
-		Url & operator=(const Url & other) = delete;
-		Url & operator=(Url && other) = delete;
-
-		std::wstring Host() const
-		{
-			return { lpszHostName, dwHostNameLength };
-		}
-
-		std::wstring Path() const
-		{
-			return { lpszUrlPath, dwUrlPathLength };
-		}
-	};
-
-
 	//
 	// 以下は WinHTTP を利用するためのラッパークラス群：
 	// 
@@ -120,6 +90,36 @@ namespace slacky
 		std::vector<std::byte> GetContent();
 
 		void Recv(std::function<void(std::byte *, uint32_t)> callback);
+	};
+
+
+	// URL を保持するクラス：
+	//
+	// * コンストラクタで渡した文字列の URL を複製して保持する。
+	// * URL_COMPONENTS 構造体を継承しており URL の各要素を取得するメソッドを提供する。
+	//
+	class Url : protected URL_COMPONENTS
+	{
+		std::wstring m_url;
+
+	public:
+		Url(std::wstring_view url);
+		Url(const Url & other);
+		Url(Url && other) noexcept;
+		~Url() noexcept = default;
+
+		Url & operator=(const Url & other) = delete;
+		Url & operator=(Url && other) = delete;
+
+		std::wstring Host() const
+		{
+			return { lpszHostName, dwHostNameLength };
+		}
+
+		std::wstring Path() const
+		{
+			return { lpszUrlPath, dwUrlPathLength };
+		}
 	};
 
 
