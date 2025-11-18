@@ -1,9 +1,8 @@
 #include "pch.h"
 #include <slacky/slacky.h>
 
-#include <string>
 #include <windows.h>
-#include <iostream>
+#include <filesystem>
 
 namespace slacky
 {
@@ -13,7 +12,7 @@ namespace slacky
 		{
 			std::wstring value(size - 1, L'\0');
 
-			if (::GetEnvironmentVariableW(name, value.data(), size) >= size)
+			if (::GetEnvironmentVariableW(name, value.data(), size) > 0)
 			{
 				return value;
 			}
@@ -46,5 +45,10 @@ namespace slacky
 
 		ASSERT_TRUE(result);
 		EXPECT_FALSE(bot.Name().empty());
+		EXPECT_FALSE(bot.Icon().empty());
+
+		std::filesystem::path icon = bot.Icon();
+		EXPECT_TRUE(std::filesystem::exists(icon));
+		EXPECT_STREQ(icon.extension().c_str(), L".png");
 	}
 }
