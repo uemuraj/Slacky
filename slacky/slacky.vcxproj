@@ -135,12 +135,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="convert.cpp" />
     <ClCompile Include="http.cpp" />
     <ClCompile Include="json.cpp" />
     <ClCompile Include="slacky.cpp" />
     <ClCompile Include="winmain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="convert.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="slacky.h" />

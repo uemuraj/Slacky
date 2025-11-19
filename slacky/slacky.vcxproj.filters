@@ -5,10 +5,12 @@
     <ClCompile Include="json.cpp" />
     <ClCompile Include="http.cpp" />
     <ClCompile Include="slacky.cpp" />
+    <ClCompile Include="convert.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="json.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="slacky.h" />
+    <ClInclude Include="convert.h" />
   </ItemGroup>
 </Project>

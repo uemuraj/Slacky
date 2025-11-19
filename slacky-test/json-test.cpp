@@ -1,7 +1,6 @@
 #include "pch.h"
-#include <slacky/json.h>
 
-#include <algorithm>
+#include <slacky/json.h>
 #include <optional>
 #include <vector>
 

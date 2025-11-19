@@ -6,61 +6,6 @@
 namespace slacky
 {
 	//
-	// UTF-8 文字列とワイド文字列の相互変換の実装：
-	//
-
-	std::wstring ConvertFrom(std::u8string_view utf8)
-	{
-		if (!utf8.empty())
-		{
-			const auto utf8_size = (int) utf8.size();
-			const auto wstr_size = ::MultiByteToWideChar(CP_UTF8, 0, (const char *) utf8.data(), utf8_size, nullptr, 0);
-
-			if (wstr_size <= 0)
-			{
-				throw std::system_error(::GetLastError(), std::system_category(), "MultiByteToWideChar");
-			}
-
-			std::wstring wstr(wstr_size, L'\0');
-
-			if (::MultiByteToWideChar(CP_UTF8, 0, (const char *) utf8.data(), utf8_size, wstr.data(), wstr_size) == 0)
-			{
-				throw std::system_error(::GetLastError(), std::system_category(), "MultiByteToWideChar");
-			}
-
-			return wstr;
-		}
-
-		return {};
-	}
-
-	std::u8string ConvertFrom(std::wstring_view wstr)
-	{
-		if (!wstr.empty())
-		{
-			const auto wstr_size = (int) wstr.size();
-			const auto utf8_size = ::WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr_size, nullptr, 0, nullptr, nullptr);
-
-			if (utf8_size <= 0)
-			{
-				throw std::system_error(::GetLastError(), std::system_category(), "WideCharToMultiByte");
-			}
-
-			std::u8string utf8(utf8_size, '\0');
-
-			if (::WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr_size, (char *) utf8.data(), utf8_size, nullptr, nullptr) == 0)
-			{
-				throw std::system_error(::GetLastError(), std::system_category(), "WideCharToMultiByte");
-			}
-
-			return utf8;
-		}
-
-		return {};
-	}
-
-
-	//
 	// 以下は WinHTTP を利用するためのラッパークラス群の実装：
 	//
 
@@ -243,6 +188,11 @@ namespace slacky
 
 
 	// ファイルにバイナリデータを書き込むための関数オブジェクト：
+	//
+	// * コンストラクタで指定したファイル名でファイルを作成し、レスポンスデータをすべてそのまま書き込む。
+	// * Response::Recv() のコールバックとして利用する。
+	// * std::function でインスタンスのコピーが発生するため、コピーコンストラクタも実装している。
+	//
 	struct FileWriter
 	{
 		HANDLE m_handle;
@@ -291,6 +241,24 @@ namespace slacky
 		}
 	};
 
+
+	//
+	// Https クラスの実装：
+	//
+
+	Response Https::Get(const wchar_t * path)
+	{
+		Request request(m_connection, L"GET", path);
+		request.Send(m_headers.c_str(), nullptr, 0);
+		return Response(request);
+	}
+
+	Response Https::Post(const wchar_t * path, void * content, uint32_t size)
+	{
+		Request request(m_connection, L"POST", path);
+		request.Send(m_headers.c_str(), content, size);
+		return Response(request);
+	}
 
 	std::wstring Https::DownloadFile(const wchar_t * path, std::wstring_view dest)
 	{
