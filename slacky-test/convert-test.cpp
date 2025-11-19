@@ -21,4 +21,16 @@ namespace slacky
 		EXPECT_TRUE(ConvertFrom(u8"").empty());
 		EXPECT_TRUE(ConvertFrom(L"").empty());
 	}
+
+	TEST(Narrow, Japanese)
+	{
+		// Use a multibyte (Japanese) string to ensure Narrow actually performs encoding conversion
+		auto result = Narrow(L"‚±‚ñ‚É‚¿‚Í");
+		EXPECT_FALSE(result.empty());
+	}
+
+	TEST(Narrow, Empty)
+	{
+		EXPECT_TRUE(Narrow(L"").empty());
+	}
 }

@@ -12,5 +12,5 @@ namespace slacky
 	std::wstring ConvertFrom(std::u8string_view u8str);
 	std::u8string ConvertFrom(std::wstring_view wstr);
 
-	// TODO: string_view ‚Æ wstring_view ‚Ì‘ŠŒÝ•ÏŠ·‹@”\‚à‘«‚·
+	std::string Narrow(std::wstring_view wstr);
 }

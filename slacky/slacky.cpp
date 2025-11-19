@@ -156,7 +156,7 @@ namespace slacky
 				throw std::runtime_error("Response missing 'ok' field.");
 			}
 
-			throw std::runtime_error("Unexpected content type.");
+			throw std::runtime_error(std::format("Unexpected content type.\n`{}`", Narrow(contentType)));
 		}
 	};
 
@@ -173,7 +173,7 @@ namespace slacky
 
 		if (!uc.lpszHostName || !uc.lpszUrlPath)
 		{
-			throw std::runtime_error("UrlParser: Failed to parse URL.");
+			throw std::runtime_error(std::format("UrlParser: Failed to parse URL.\n`{}`", Narrow(url)));
 		}
 
 		return { {uc.lpszHostName, uc.dwHostNameLength}, {uc.lpszUrlPath, uc.dwUrlPathLength} };

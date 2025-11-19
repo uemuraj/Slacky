@@ -54,4 +54,29 @@ namespace slacky
 
 		return {};
 	}
+
+	std::string Narrow(std::wstring_view wcs)
+	{
+		if (!wcs.empty())
+		{
+			const auto wcs_size = (int) wcs.size();
+			const auto mbs_size = ::WideCharToMultiByte(CP_ACP, 0, wcs.data(), wcs_size, nullptr, 0, nullptr, nullptr);
+
+			if (mbs_size <= 0)
+			{
+				throw std::system_error(::GetLastError(), std::system_category(), "WideCharToMultiByte");
+			}
+
+			std::string mbs(mbs_size, '\0');
+
+			if (::WideCharToMultiByte(CP_ACP, 0, wcs.data(), wcs_size, mbs.data(), mbs_size, nullptr, nullptr) == 0)
+			{
+				throw std::system_error(::GetLastError(), std::system_category(), "WideCharToMultiByte");
+			}
+
+			return mbs;
+		}
+
+		return {};
+	}
 }
