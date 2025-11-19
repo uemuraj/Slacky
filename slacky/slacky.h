@@ -36,5 +36,8 @@ namespace slacky
 		{
 			return m_icon;
 		}
+
+	private:
+		std::wstring DownloadIcon(std::wstring_view url);
 	};
 }

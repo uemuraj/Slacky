@@ -3,6 +3,7 @@
 #include "json.h"
 
 #include <optional>
+#include <filesystem>
 #include <system_error>
 
 namespace slacky
@@ -81,9 +82,16 @@ namespace slacky
 		}
 	};
 
+
+	// Slack API へのアクセス：
+	//
+	// * コンストラクタで Bot User OAuth Token を指定する。
+	// * ホスト名は "slack.com" に固定されており、Get/Post メソッドでパスを指定して API を呼び出す。
+	// * 直近のレスポンスを SlackApiResponse 構造体にパースして保持する。
+	//
 	class SlackApi : Https
 	{
-		SlackApiResponse m_response;
+		std::unique_ptr<SlackApiResponse> m_response;
 
 	public:
 		SlackApi(std::wstring_view token) : Https(L"slack.com")
@@ -107,7 +115,12 @@ namespace slacky
 
 		SlackApiResponse::Bot & Bot()
 		{
-			return m_response.bot;
+			if (m_response)
+			{
+				return m_response->bot;
+			}
+
+			throw std::logic_error("Bot() called before any response: call Get/Post first.");
 		}
 
 	private:
@@ -130,21 +143,45 @@ namespace slacky
 					::OutputDebugStringW(L"\n================\n");
 				}
 
-				VisitJson(m_response, json);
+				m_response = std::make_unique<SlackApiResponse>();
 
-				if (m_response.ok.has_value())
+				VisitJson(*m_response, json);
+
+				if (m_response->ok.has_value())
 				{
-					return m_response.ok.value();
+					return m_response->ok.value();
 				}
 
-				// TODO: 例外に適切な情報を含める
-				throw std::runtime_error("Missing 'ok' field in response.");
+				throw std::runtime_error("Response missing 'ok' field.");
 			}
 
-			// TODO: 例外に適切な情報を含める
-			throw std::runtime_error("Unexpected response.");
+			throw std::runtime_error("Unexpected content type.");
 		}
 	};
+
+
+	// URL を解析してホスト名とパスを返す
+	std::pair<std::wstring, std::wstring> UrlParser(std::wstring_view url)
+	{
+		URL_COMPONENTS uc{ .dwStructSize = sizeof(URL_COMPONENTS), .dwHostNameLength = DWORD(-1), .dwUrlPathLength = DWORD(-1), };
+
+		if (!::WinHttpCrackUrl(url.data(), (DWORD) url.size(), 0, &uc))
+		{
+			throw std::system_error(::GetLastError(), std::system_category(), "WinHttpCrackUrl");
+		}
+
+		if (!uc.lpszHostName || !uc.lpszUrlPath)
+		{
+			throw std::runtime_error("UrlParser: Failed to parse URL.");
+		}
+
+		return { {uc.lpszHostName, uc.dwHostNameLength}, {uc.lpszUrlPath, uc.dwUrlPathLength} };
+	}
+
+
+	//
+	// SlackBot クラスの実装：
+	//
 
 	SlackBot::SlackBot(std::wstring_view token) : m_api(std::make_unique<SlackApi>(token)), m_token(token)
 	{}
@@ -160,12 +197,21 @@ namespace slacky
 			{
 				auto & bot = m_api->Bot();
 				m_name = bot.name;
-				//m_icon = DownloadIcon(bot.icons.image_48);
+				m_icon = DownloadIcon(bot.icons.image_48);
 			}
 
 			return true;
 		}
 
 		return false;
+	}
+
+	std::wstring SlackBot::DownloadIcon(std::wstring_view url)
+	{
+		auto [host, path] = UrlParser(url);
+
+		Https https(host.c_str());
+		https.SetBearerToken(m_token);
+		return https.DownloadFile(path.c_str(), std::filesystem::temp_directory_path().native());
 	}
 }

@@ -1,8 +1,14 @@
 #include "http.h"
+
 #include <system_error>
+#include <filesystem>
 
 namespace slacky
 {
+	//
+	// UTF-8 文字列とワイド文字列の相互変換の実装：
+	//
+
 	std::wstring ConvertFrom(std::u8string_view utf8)
 	{
 		if (!utf8.empty())
@@ -53,34 +59,10 @@ namespace slacky
 		return {};
 	}
 
-	static const URL_COMPONENTS kDefaultUrlComponents = URL_COMPONENTS
-	{
-		.dwStructSize = sizeof(URL_COMPONENTS),
-		.dwSchemeLength = DWORD(-1),
-		.dwHostNameLength = DWORD(-1),
-		.dwUserNameLength = DWORD(-1),
-		.dwPasswordLength = DWORD(-1),
-		.dwUrlPathLength = DWORD(-1),
-		.dwExtraInfoLength = DWORD(-1),
-	};
 
-	Url::Url(std::wstring_view url) : URL_COMPONENTS(kDefaultUrlComponents), m_url(url)
-	{
-		if (!::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this))
-		{
-			throw std::system_error(::GetLastError(), std::system_category(), "WinHttpCrackUrl");
-		}
-	}
-
-	Url::Url(const Url & other) : URL_COMPONENTS(kDefaultUrlComponents), m_url(other.m_url)
-	{
-		::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this);
-	}
-
-	Url::Url(Url && other) noexcept : URL_COMPONENTS(kDefaultUrlComponents), m_url(std::move(other.m_url))
-	{
-		::WinHttpCrackUrl(m_url.data(), (DWORD) m_url.size(), 0, this);
-	}
+	//
+	// 以下は WinHTTP を利用するためのラッパークラス群の実装：
+	//
 
 	Session::Session() : Handle(::WinHttpOpen(L"A WinHTTP Program Slacky/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0))
 	{
@@ -257,5 +239,84 @@ namespace slacky
 
 			callback(buff.data(), read);
 		}
+	}
+
+
+	// ファイルにバイナリデータを書き込むための関数オブジェクト：
+	struct FileWriter
+	{
+		HANDLE m_handle;
+
+		FileWriter(const wchar_t * fileName) : m_handle(::CreateFileW(fileName, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr))
+		{
+			if (m_handle == INVALID_HANDLE_VALUE)
+			{
+				throw std::system_error(::GetLastError(), std::system_category(), "CreateFileW");
+			}
+		}
+
+		FileWriter(const FileWriter & other) : m_handle(INVALID_HANDLE_VALUE)
+		{
+			if (!::DuplicateHandle(::GetCurrentProcess(), other.m_handle, ::GetCurrentProcess(), &m_handle, 0, false, DUPLICATE_SAME_ACCESS))
+			{
+				throw std::system_error(::GetLastError(), std::system_category(), "DuplicateHandle");
+			}
+		}
+
+		~FileWriter() noexcept
+		{
+			::CloseHandle(m_handle);
+		}
+
+		void operator()(std::byte * data, uint32_t size)
+		{
+			DWORD written = 0;
+
+			do
+			{
+				if (!::WriteFile(m_handle, data, size, &written, nullptr))
+				{
+					throw std::system_error(::GetLastError(), std::system_category(), "WriteFile");
+				}
+
+				if (size <= written)
+				{
+					return;
+				}
+
+				data += written;
+				size -= written;
+
+			} while (written > 0);
+		}
+	};
+
+
+	std::wstring Https::DownloadFile(const wchar_t * path, std::wstring_view dest)
+	{
+		std::filesystem::path file(dest);
+
+		// まずディレクトリであることを確認
+		std::error_code ec{};
+
+		if (!std::filesystem::is_directory(file, ec))
+		{
+			throw std::system_error(ec, "std::filesystem::is_directory");
+		}
+
+		// URL パスからファイル名を抽出して結合
+		file /= std::filesystem::path(path).filename();
+
+		Response response = Get(path);
+		response.Recv(FileWriter(file.c_str()));
+
+		if (::IsDebuggerPresent())
+		{
+			::OutputDebugStringW(L"=== Response ===\n");
+			::OutputDebugStringW(response.Headers().c_str());
+			::OutputDebugStringW(L"================\n");
+		}
+
+		return file;
 	}
 }

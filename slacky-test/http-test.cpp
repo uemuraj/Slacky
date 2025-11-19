@@ -1,5 +1,6 @@
 #include "pch.h"
 #include <slacky/http.h>
+#include <filesystem>
 
 namespace slacky
 {
@@ -19,36 +20,6 @@ namespace slacky
 	{
 		EXPECT_TRUE(ConvertFrom(u8"").empty());
 		EXPECT_TRUE(ConvertFrom(L"").empty());
-	}
-
-	TEST(Url, HostAndPath_Basic)
-	{
-		Url u(L"https://example.com/path/to/resource?query=1#frag");
-		EXPECT_STREQ(u.Host().c_str(), L"example.com");
-		EXPECT_STREQ(u.Path().c_str(), L"/path/to/resource");
-	}
-
-	TEST(Url, HostWithPort)
-	{
-		Url u(L"http://localhost:8080/");
-		EXPECT_STREQ(u.Host().c_str(), L"localhost");
-		EXPECT_STREQ(u.Path().c_str(), L"/");
-	}
-
-	TEST(Url, CopyConstructor)
-	{
-		Url original(L"https://copy.example.com/dir/file");
-		Url copy(original);
-		EXPECT_STREQ(copy.Host().c_str(), L"copy.example.com");
-		EXPECT_STREQ(copy.Path().c_str(), L"/dir/file");
-	}
-
-	TEST(Url, MoveConstructor)
-	{
-		Url original(L"https://move.example.com/abc");
-		Url moved(std::move(original));
-		EXPECT_STREQ(moved.Host().c_str(), L"move.example.com");
-		EXPECT_STREQ(moved.Path().c_str(), L"/abc");
 	}
 
 	TEST(Https, Get_SlackStatus_Current)
@@ -74,5 +45,24 @@ namespace slacky
 			::OutputDebugStringW(ConvertFrom(json).c_str());
 			::OutputDebugStringW(L"\n---------------------------------------------\n");
 		}
+	}
+
+	TEST(Https, DownloadFile_OkPng)
+	{
+		auto temp = std::filesystem::temp_directory_path();
+
+		if (std::filesystem::exists(temp / L"Ok.png"))
+		{
+			GTEST_LOG_(WARNING) << "Temp already contains Ok.png; it will be overwritten.\n";
+		}
+
+		Https https(L"slack-status.com");
+		auto result = https.DownloadFile(L"/img/v2/Ok.png", temp.wstring());
+
+		EXPECT_TRUE(std::filesystem::exists(result));
+		EXPECT_GT(std::filesystem::file_size(result), 0u);
+
+		// cleanup
+		std::filesystem::remove(result);
 	}
 }
