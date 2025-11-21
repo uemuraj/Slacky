@@ -83,7 +83,7 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLi
 
 			if (bot.Post(cmdLine[2], Expand(cmdLine[3])))
 			{
-				// TODO: Toaster notification with name and icon !!
+				// TODO: 正常に投稿できたらトースト通知を残して終わる
 				auto name = bot.Name();
 				auto icon = bot.Icon();
 				return 0;
