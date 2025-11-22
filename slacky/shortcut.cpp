@@ -57,6 +57,14 @@ namespace slacky
 
 	void StartMenuShortcut::Create(const wchar_t * target, const wchar_t * appId) const
 	{
+		// 既に存在する場合は何もしない
+		auto path = GetPath();
+
+		if (std::filesystem::exists(path))
+		{
+			return;
+		}
+
 		// ショートカットの基本部分を構成する
 		com_ptr_t<IShellLinkW> link;
 
@@ -98,7 +106,7 @@ namespace slacky
 			throw std::system_error(hr, std::system_category(), "IShellLink::QueryInterface(IPersistFile)");
 		}
 
-		if (auto hr = file->Save(GetPath().c_str(), true); FAILED(hr))
+		if (auto hr = file->Save(path.c_str(), true); FAILED(hr))
 		{
 			throw std::system_error(hr, std::system_category(), "IPersistFile::Save");
 		}

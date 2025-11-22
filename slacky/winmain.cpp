@@ -6,6 +6,7 @@
 #include <system_error>
 
 #include "slacky.h"
+#include "toast.h"
 
 namespace
 {
@@ -70,6 +71,7 @@ _Use_decl_annotations_
 int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLine*/, int /*nCmdShow*/)
 {
 	using slacky::SlackBot;
+	using slacky::Toast;
 
 	try
 	{
@@ -81,11 +83,16 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLi
 		{
 			SlackBot bot(cmdLine[1]);
 
-			if (bot.Post(cmdLine[2], Expand(cmdLine[3])))
+			auto channel = cmdLine[2];
+			auto message = Expand(cmdLine[3]);
+
+			if (bot.Post(channel, message))
 			{
-				// TODO: 正常に投稿できたらトースト通知を残して終わる
-				auto name = bot.Name();
-				auto icon = bot.Icon();
+				auto & icon = bot.Icon();
+				auto & name = bot.Name();
+
+				Toast toast;
+				toast.Show(icon, name, message);
 				return 0;
 			}
 		}

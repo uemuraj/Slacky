@@ -140,6 +140,7 @@
     <ClCompile Include="json.cpp" />
     <ClCompile Include="shortcut.cpp" />
     <ClCompile Include="slacky.cpp" />
+    <ClCompile Include="toast.cpp" />
     <ClCompile Include="winmain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -148,6 +149,7 @@
     <ClInclude Include="json.h" />
     <ClInclude Include="shortcut.h" />
     <ClInclude Include="slacky.h" />
+    <ClInclude Include="toast.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
