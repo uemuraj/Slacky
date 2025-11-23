@@ -10,10 +10,10 @@ namespace slacky
 	class Toast
 	{
 		struct Impl;
-		std::unique_ptr<Impl> impl;
+		std::unique_ptr<Impl> m_impl;
 
 	public:
-		Toast();
+		Toast(const wchar_t * appId);
 		~Toast() noexcept;
 
 		void Show(const std::filesystem::path & icon, const std::wstring & title, const std::wstring & message);

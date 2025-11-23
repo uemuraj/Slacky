@@ -40,4 +40,7 @@ namespace slacky
 	private:
 		std::wstring DownloadIcon(std::wstring_view url);
 	};
+
+	// アプリケーションの AppUserModelID：
+	inline constexpr wchar_t kAppUserModelID[] = L"com.uemuraj.Slacky";
 }

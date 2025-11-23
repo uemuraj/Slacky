@@ -4,14 +4,14 @@
 
 #include <windows.h>
 #include <wrl.h>
-#include <wrl/wrappers/corewrappers.h>
 #include <roapi.h>
-#include <winstring.h>
-#include <windows.ui.notifications.h>
-#include <windows.data.xml.dom.h>
 
-#pragma comment(lib, "runtimeobject.lib")
+#include <winstring.h>
+#include <windows.data.xml.dom.h>
+#include <windows.ui.notifications.h>
+
 #pragma comment(lib, "windowsapp.lib")
+#pragma comment(lib, "runtimeobject.lib")
 
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
@@ -20,113 +20,131 @@ using namespace ABI::Windows::Data::Xml::Dom;
 
 namespace slacky
 {
-    // Pimpl definition
-    struct Toast::Impl
-    {
-        Impl()
-        {
-            if (auto hr = ::RoInitialize(RO_INIT_SINGLETHREADED); FAILED(hr))
-            {
-                throw std::system_error(hr, std::system_category(), "RoInitialize");
-            }
-        }
+	struct RoInitialized
+	{
+		RoInitialized()
+		{
+			if (auto hr = ::RoInitialize(RO_INIT_SINGLETHREADED); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "RoInitialize");
+			}
+		}
 
-        ~Impl() noexcept
-        {
-            ::RoUninitialize();
-        }
+		~RoInitialized() noexcept
+		{
+			::RoUninitialize();
+		}
+	};
 
-        void Show(const std::filesystem::path & /*icon*/, const std::wstring & title, const std::wstring & message)
-        {
-            // Obtain the ToastNotificationManager activation factory
-            ComPtr<IToastNotificationManagerStatics> toastManager;
-            if (auto hr = ::RoGetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager).Get(), IID_PPV_ARGS(&toastManager)); FAILED(hr))
-            {
-                throw std::system_error(hr, std::system_category(), "RoGetActivationFactory(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)");
-            }
+	struct Toast::Impl : RoInitialized
+	{
+		ComPtr<IToastNotificationManagerStatics> manager;
 
-            // https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toasttemplatetype?view=winrt-26100
-            ComPtr<IXmlDocument> xmlDoc;
-            if (auto hr = toastManager->GetTemplateContent(ToastTemplateType_ToastText02, &xmlDoc); FAILED(hr) || !xmlDoc)
-            {
-                throw std::system_error(hr, std::system_category(), "IToastNotificationManagerStatics::GetTemplateContent");
-            }
+		HStringReference applicationId;
 
-            // Fill in the text elements
-            ComPtr<IXmlNodeList> nodeList;
-            if (auto hr = xmlDoc->GetElementsByTagName(HStringReference(L"text").Get(), &nodeList); FAILED(hr) || !nodeList)
-            {
-                throw std::system_error(hr, std::system_category(), "XmlDocument::GetElementsByTagName");
-            }
+		Impl(const wchar_t * appId) : applicationId(appId)
+		{
+			if (auto hr = ::RoGetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager).Get(), IID_PPV_ARGS(&manager)); hr != S_OK)
+			{
+				throw std::system_error(hr, std::system_category(), "RoGetActivationFactory(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)");
+			}
+		}
 
-            // Helper to set text at index
-            auto setTextAt = [&](unsigned index, const std::wstring & text) -> void
-            {
-                ComPtr<IXmlNode> textNode;
-                if (auto hr = nodeList->Item(index, &textNode); FAILED(hr) || !textNode)
-                {
-                    throw std::system_error(hr, std::system_category(), "XmlNodeList::Item");
-                }
+		~Impl() noexcept = default;
 
-                // Create an IXmlText, then obtain an IXmlNode from it for AppendChild
-                ComPtr<IXmlText> newText;
-                if (auto hr = xmlDoc->CreateTextNode(HStringReference(text.c_str()).Get(), &newText); FAILED(hr) || !newText)
-                {
-                    throw std::system_error(hr, std::system_category(), "XmlDocument::CreateTextNode");
-                }
+		void Show(ComPtr<IXmlDocument> content)
+		{
+			ComPtr<IToastNotificationFactory> factory;
 
-                ComPtr<IXmlNode> newNode;
-                if (auto hr = newText.As(&newNode); FAILED(hr) || !newNode)
-                {
-                    throw std::system_error(hr, std::system_category(), "XmlText::As");
-                }
+			if (auto hr = ::RoGetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotification).Get(), IID_PPV_ARGS(&factory)); hr != S_OK)
+			{
+				throw std::system_error(hr, std::system_category(), "RoGetActivationFactory(RuntimeClass_Windows_UI_Notifications_ToastNotification)");
+			}
 
-                ComPtr<IXmlNode> appended;
-                if (auto hr = textNode->AppendChild(newNode.Get(), &appended); FAILED(hr))
-                {
-                    throw std::system_error(hr, std::system_category(), "XmlNode::AppendChild");
-                }
-            };
+			ComPtr<IToastNotification> toast;
 
-            setTextAt(0, title);
-            setTextAt(1, message);
+			if (auto hr = factory->CreateToastNotification(content.Get(), &toast); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "IToastNotificationFactory::CreateToastNotification");
+			}
 
-            // Create the ToastNotification from the XML
-            ComPtr<IToastNotificationFactory> toastFactory;
-            if (auto hr = ::RoGetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotification).Get(), IID_PPV_ARGS(&toastFactory)); FAILED(hr) || !toastFactory)
-            {
-                throw std::system_error(hr, std::system_category(), "RoGetActivationFactory(RuntimeClass_Windows_UI_Notifications_ToastNotification)");
-            }
+			ComPtr<IToastNotifier> notifier;
 
-            ComPtr<IToastNotification> toast;
-            if (auto hr = toastFactory->CreateToastNotification(xmlDoc.Get(), &toast); FAILED(hr) || !toast)
-            {
-                throw std::system_error(hr, std::system_category(), "IToastNotificationFactory::CreateToastNotification");
-            }
+			if (auto hr = manager->CreateToastNotifierWithId(applicationId.Get(), &notifier); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "IToastNotificationManagerStatics::CreateToastNotifier");
+			}
 
-            // Obtain a notifier and show the toast
-            ComPtr<IToastNotifier> notifier;
-            if (auto hr = toastManager->CreateToastNotifier(&notifier); FAILED(hr) || !notifier)
-            {
-                throw std::system_error(hr, std::system_category(), "IToastNotificationManagerStatics::CreateToastNotifier");
-            }
+			if (auto hr = notifier->Show(toast.Get()); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "IToastNotifier::Show");
+			}
+		}
 
-            if (auto hr = notifier->Show(toast.Get()); FAILED(hr))
-            {
-                throw std::system_error(hr, std::system_category(), "IToastNotifier::Show");
-            }
-        }
-    };
+		decltype(auto) GetTemplate(ToastTemplateType type)
+		{
+			ComPtr<IXmlDocument> result;
 
-    Toast::Toast()
-        : impl(std::make_unique<Impl>())
-    {
-    }
+			if (auto hr = manager->GetTemplateContent(type, &result); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "IToastNotificationManagerStatics::GetTemplateContent");
+			}
 
-    Toast::~Toast() noexcept = default;
+			// TODO: 取得した XML のテキスト表記をデバッグ出力する
 
-    void Toast::Show(const std::filesystem::path & icon, const std::wstring & title, const std::wstring & message)
-    {
-        impl->Show(icon, title, message);
-    }
+			return result;
+		}
+
+		void SetTextContent(ComPtr<IXmlDocument> xml, unsigned index, const std::wstring & text)
+		{
+			ComPtr<IXmlNodeList> nodeList;
+			if (auto hr = xml->GetElementsByTagName(HStringReference(L"text").Get(), &nodeList); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlDocument::GetElementsByTagName");
+			}
+
+			ComPtr<IXmlNode> textNode;
+			if (auto hr = nodeList->Item(index, &textNode); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlNodeList::Item");
+			}
+
+			ComPtr<IXmlText> newText;
+			if (auto hr = xml->CreateTextNode(HStringReference(text.c_str()).Get(), &newText); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlDocument::CreateTextNode");
+			}
+
+			ComPtr<IXmlNode> newNode;
+			if (auto hr = newText.As(&newNode); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlText::As");
+			}
+
+			ComPtr<IXmlNode> appended;
+			if (auto hr = textNode->AppendChild(newNode.Get(), &appended); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlNode::AppendChild");
+			}
+		}
+
+		decltype(auto) GetToastContent(const std::filesystem::path & icon, const std::wstring & title, const std::wstring & message)
+		{
+			auto xml = GetTemplate(ToastTemplateType_ToastText02);
+			SetTextContent(xml, 0, title);
+			SetTextContent(xml, 1, message);
+			// TODO: テキストを設定したあとの XML のテキスト表記をデバッグ出力する
+			return xml;
+		}
+	};
+
+	Toast::Toast(const wchar_t * appId) : m_impl(std::make_unique<Impl>(appId))
+	{}
+
+	Toast::~Toast() noexcept = default;
+
+	void Toast::Show(const std::filesystem::path & icon, const std::wstring & title, const std::wstring & message)
+	{
+		m_impl->Show(m_impl->GetToastContent(icon, title, message));
+	}
 }

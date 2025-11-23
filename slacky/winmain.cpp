@@ -1,11 +1,14 @@
 #include <windows.h>
 #include <shellapi.h>
+#include <shlobj_core.h>
 
 #include <locale>
 #include <string>
+#include <filesystem>
 #include <system_error>
 
 #include "slacky.h"
+#include "shortcut.h"
 #include "toast.h"
 
 namespace
@@ -70,14 +73,25 @@ namespace
 _Use_decl_annotations_
 int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLine*/, int /*nCmdShow*/)
 {
-	using slacky::SlackBot;
-	using slacky::Toast;
+	using namespace slacky;
 
 	try
 	{
 		std::locale::global(std::locale(""));
 
 		CommandLine cmdLine;
+
+		if (cmdLine.size() > 0)
+		{
+			auto target = std::filesystem::absolute(cmdLine[0]);
+			StartMenuShortcut shortcut(VS_TARGETNAMEW);
+			shortcut.Create(target.c_str(), kAppUserModelID);
+		}
+
+		if (::SetCurrentProcessExplicitAppUserModelID(kAppUserModelID) != S_OK)
+		{
+			throw std::system_error(::GetLastError(), std::system_category(), "SetCurrentProcessExplicitAppUserModelID()");
+		}
 
 		if (cmdLine.size() > 3)
 		{
@@ -91,7 +105,7 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLi
 				auto & icon = bot.Icon();
 				auto & name = bot.Name();
 
-				Toast toast;
+				Toast toast(kAppUserModelID);
 				toast.Show(icon, name, message);
 				return 0;
 			}
