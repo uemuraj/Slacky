@@ -75,6 +75,9 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLi
 {
 	using namespace slacky;
 
+	// アプリケーションの AppUserModelID：
+	wchar_t kAppUserModelID[] = L"com.github.uemuraj.Slacky";
+
 	try
 	{
 		std::locale::global(std::locale(""));

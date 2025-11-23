@@ -40,13 +40,18 @@ namespace slacky
 	{
 		ComPtr<IToastNotificationManagerStatics> manager;
 
-		HStringReference applicationId;
+		HString applicationId;
 
-		Impl(const wchar_t * appId) : applicationId(appId)
+		Impl(const wchar_t * appId)
 		{
 			if (auto hr = ::RoGetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager).Get(), IID_PPV_ARGS(&manager)); hr != S_OK)
 			{
 				throw std::system_error(hr, std::system_category(), "RoGetActivationFactory(RuntimeClass_Windows_UI_Notifications_ToastNotificationManager)");
+			}
+
+			if (auto hr = applicationId.Set(appId); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "HString::Set");
 			}
 		}
 
@@ -90,7 +95,10 @@ namespace slacky
 				throw std::system_error(hr, std::system_category(), "IToastNotificationManagerStatics::GetTemplateContent");
 			}
 
-			// TODO: 取得した XML のテキスト表記をデバッグ出力する
+			if (::IsDebuggerPresent())
+			{
+				Dump(result); // !!!
+			}
 
 			return result;
 		}
@@ -133,8 +141,31 @@ namespace slacky
 			auto xml = GetTemplate(ToastTemplateType_ToastText02);
 			SetTextContent(xml, 0, title);
 			SetTextContent(xml, 1, message);
-			// TODO: テキストを設定したあとの XML のテキスト表記をデバッグ出力する
+
+			if (::IsDebuggerPresent())
+			{
+				Dump(xml);
+			}
+
 			return xml;
+		}
+
+		void Dump(ComPtr<IXmlDocument> xml)
+		{
+			ComPtr<IXmlNodeSerializer> serializer;
+			if (auto hr = xml.As(&serializer); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "IXmlDocument::As(IXmlNodeSerializer)");
+			}
+
+			HString xmlText;
+			if (auto hr = serializer->GetXml(xmlText.GetAddressOf()); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "IXmlNodeSerializer::GetXml");
+			}
+
+			::OutputDebugStringW(WindowsGetStringRawBuffer(xmlText.Get(), nullptr));
+			::OutputDebugStringW(L"\n");
 		}
 	};
 
