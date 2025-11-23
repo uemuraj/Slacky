@@ -4,12 +4,14 @@
 
 #include <locale>
 #include <string>
+#include <format>
 #include <filesystem>
 #include <system_error>
 
 #include "slacky.h"
 #include "shortcut.h"
 #include "toast.h"
+#include "convert.h"
 
 namespace
 {
@@ -67,6 +69,20 @@ namespace
 
 		throw std::system_error(::GetLastError(), std::system_category(), "ExpandEnvironmentStringsW()");
 	}
+
+
+	// アプリケーションの AppUserModelID を構成する
+	std::wstring GetAppUserModelID()
+	{
+		auto aumid = Expand(L"%COMPUTERNAME%.slacky");
+
+		if (aumid[0] == L'%')
+		{
+			throw std::runtime_error("Environment variable 'COMPUTERNAME' is not defined.");
+		}
+
+		return aumid;
+	}
 }
 
 
@@ -75,25 +91,25 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLi
 {
 	using namespace slacky;
 
-	// アプリケーションの AppUserModelID：
-	wchar_t kAppUserModelID[] = L"com.github.uemuraj.Slacky";
-
 	try
 	{
 		std::locale::global(std::locale(""));
+
+		auto aumid = GetAppUserModelID();
 
 		CommandLine cmdLine;
 
 		if (cmdLine.size() > 0)
 		{
 			auto target = std::filesystem::absolute(cmdLine[0]);
-			StartMenuShortcut shortcut(VS_TARGETNAMEW);
-			shortcut.Create(target.c_str(), kAppUserModelID);
+			StartMenuShortcut shortcut(VS_SOLUTION);
+			shortcut.Create(target.c_str(), aumid.c_str());
 		}
 
-		if (::SetCurrentProcessExplicitAppUserModelID(kAppUserModelID) != S_OK)
+		if (::SetCurrentProcessExplicitAppUserModelID(aumid.c_str()) != S_OK)
 		{
-			throw std::system_error(::GetLastError(), std::system_category(), "SetCurrentProcessExplicitAppUserModelID()");
+			throw std::system_error(::GetLastError(), std::system_category(),
+				std::format("SetCurrentProcessExplicitAppUserModelID({})", Narrow(aumid)));
 		}
 
 		if (cmdLine.size() > 3)
@@ -108,7 +124,7 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLi
 				auto & icon = bot.Icon();
 				auto & name = bot.Name();
 
-				Toast toast(kAppUserModelID);
+				Toast toast(aumid.c_str());
 				toast.Show(icon, name, message);
 				return 0;
 			}
@@ -118,7 +134,7 @@ int WINAPI wWinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrev*/, PWSTR /*pCmdLi
 	}
 	catch (const std::exception & e)
 	{
-		::MessageBoxA(nullptr, e.what(), VS_TARGETNAME, MB_ICONERROR);
+		::MessageBoxA(nullptr, e.what(), VS_SOLUTIONA, MB_ICONERROR);
 	}
 
 	return 2;
