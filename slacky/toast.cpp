@@ -167,7 +167,7 @@ namespace slacky
 
 		decltype(auto) GetToastContent(const std::filesystem::path & icon, const std::wstring & title, const std::wstring & message)
 		{
-			auto xml = GetTemplate(ToastTemplateType_ToastText02);
+			auto xml = GetTemplate(ToastTemplateType::ToastTemplateType_ToastImageAndText02);
 
 			SetImageSource(xml, icon);
 			SetTextContent(xml, 0, title);
