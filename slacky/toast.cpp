@@ -1,4 +1,5 @@
 #include "toast.h"
+#include "convert.h"
 
 #include <system_error>
 
@@ -103,6 +104,34 @@ namespace slacky
 			return result;
 		}
 
+		void SetImageSource(ComPtr<IXmlDocument> xml, const std::filesystem::path & icon)
+		{
+			auto url = UrlFrom(icon);
+
+			ComPtr<IXmlNodeList> nodeList;
+			if (auto hr = xml->GetElementsByTagName(HStringReference(L"image").Get(), &nodeList); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlDocument::GetElementsByTagName(image)");
+			}
+
+			ComPtr<IXmlNode> imageNode;
+			if (auto hr = nodeList->Item(0, &imageNode); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlNodeList::Item(image)");
+			}
+
+			ComPtr<IXmlElement> imageElement;
+			if (auto hr = imageNode.As(&imageElement); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlNode::As(IXmlElement)");
+			}
+
+			if (auto hr = imageElement->SetAttribute(HStringReference(L"src").Get(), HStringReference(url.c_str()).Get()); FAILED(hr))
+			{
+				throw std::system_error(hr, std::system_category(), "XmlElement::SetAttribute(src)");
+			}
+		}
+
 		void SetTextContent(ComPtr<IXmlDocument> xml, unsigned index, const std::wstring & text)
 		{
 			ComPtr<IXmlNodeList> nodeList;
@@ -139,6 +168,8 @@ namespace slacky
 		decltype(auto) GetToastContent(const std::filesystem::path & icon, const std::wstring & title, const std::wstring & message)
 		{
 			auto xml = GetTemplate(ToastTemplateType_ToastText02);
+
+			SetImageSource(xml, icon);
 			SetTextContent(xml, 0, title);
 			SetTextContent(xml, 1, message);
 
