@@ -33,4 +33,18 @@ namespace slacky
 	{
 		EXPECT_TRUE(Narrow(L"").empty());
 	}
+
+	TEST(UrlFrom, Basic)
+	{
+		auto uri = UrlFrom(__FILEW__);
+		EXPECT_FALSE(uri.empty());
+		EXPECT_EQ(uri.rfind(L"file:///", 0), 0);
+	}
+
+	TEST(UrlFrom, SpaceEncoding)
+	{
+		auto uri = UrlFrom(L"slacky test url.txt");
+		EXPECT_FALSE(uri.empty());
+		EXPECT_NE(uri.find(L"%20"), std::wstring::npos);
+	}
 }

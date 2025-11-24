@@ -1,10 +1,15 @@
 #include "convert.h"
 
 #include <Windows.h>
+#include <shlwapi.h>
 #include <system_error>
 
 namespace slacky
 {
+	//
+	// ƒƒCƒh•¶š—ñ‚Æ UTF-8 •¶š—ñ‚Ì‘ŠŒİ•ÏŠ·F
+	//
+
 	std::wstring ConvertFrom(std::u8string_view utf8)
 	{
 		if (!utf8.empty())
@@ -78,5 +83,31 @@ namespace slacky
 		}
 
 		return {};
+	}
+
+	std::wstring UrlFrom(const std::filesystem::path & path)
+	{
+		if (!path.empty())
+		{
+			auto abs = std::filesystem::absolute(path).wstring();
+
+			std::wstring url(abs.size() + _countof(L"file:///"), L'\0');
+
+			DWORD cch = (DWORD) url.size();
+
+			if (auto hr = ::UrlCreateFromPathW(abs.c_str(), url.data(), &cch, 0); FAILED(hr))
+			{
+				url.resize((size_t) cch - 1);
+
+				if (auto hr = ::UrlCreateFromPathW(abs.c_str(), url.data(), &cch, 0); FAILED(hr))
+				{
+					throw std::system_error(hr, std::system_category(), "UrlCreateFromPathW");
+				}
+			}
+
+			return url;
+		}
+
+		throw std::invalid_argument("path is empty.");
 	}
 }
