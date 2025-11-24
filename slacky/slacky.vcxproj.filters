@@ -16,5 +16,12 @@
     <ClInclude Include="convert.h" />
     <ClInclude Include="shortcut.h" />
     <ClInclude Include="toast.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="slacky.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="slacky.ico" />
   </ItemGroup>
 </Project>

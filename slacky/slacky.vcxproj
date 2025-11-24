@@ -70,6 +70,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -94,12 +100,15 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;VS_SOLUTION=LR"($(SolutionName))";VS_SOLUTIONA=R"($(SolutionName))";VS_SOLUTIONW=LR"($(SolutionName))";VS_TARGETDIR=LR"($(TargetDir))";VS_TARGETNAME=R"($(TargetName))";VS_TARGETNAMEA=R"($(TargetName))";VS_TARGETNAMEW=LR"($(TargetName))";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <Optimization>MinSpace</Optimization>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Winhttp.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -126,12 +135,15 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;VS_SOLUTION=LR"($(SolutionName))";VS_SOLUTIONA=R"($(SolutionName))";VS_SOLUTIONW=LR"($(SolutionName))";VS_TARGETDIR=LR"($(TargetDir))";VS_TARGETNAME=R"($(TargetName))";VS_TARGETNAMEA=R"($(TargetName))";VS_TARGETNAMEW=LR"($(TargetName))";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <Optimization>MinSpace</Optimization>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Winhttp.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -147,9 +159,16 @@
     <ClInclude Include="convert.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="json.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="shortcut.h" />
     <ClInclude Include="slacky.h" />
     <ClInclude Include="toast.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="slacky.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="slacky.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
