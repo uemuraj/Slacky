@@ -5,7 +5,6 @@
 #include <shellapi.h>
 #undef GetMessage
 
-#include <span>
 #include <filesystem>
 #include <system_error>
 
@@ -75,7 +74,7 @@ namespace slacky
 	{
 		// コマンドライン引数だけでなく、環境変数 SLACKY_TOKEN からも取得できるようにする
 
-		for (std::wstring_view argv : std::span(m_argv + 1, static_cast<size_t>(m_argc - 1)))
+		for (std::wstring_view argv : Params())
 		{
 			if (argv.starts_with(L"xoxb-"))
 			{
@@ -97,7 +96,7 @@ namespace slacky
 	{
 		// コマンドライン引数のうち Token 以外の最初の要素をチャネル ID とする
 
-		for (std::wstring_view argv : std::span(m_argv + 1, static_cast<size_t>(m_argc - 1)))
+		for (std::wstring_view argv : Params())
 		{
 			if (argv.starts_with(L"xoxb-"))
 			{
@@ -122,7 +121,7 @@ namespace slacky
 		// * @ で始まる場合はメッセージを格納したテキストファイルの名前とみなし、その内容を読み込む
 		// * 環境変数の展開も行う
 
-		for (std::wstring_view argv : std::span(m_argv + 1, static_cast<size_t>(m_argc - 1)))
+		for (std::wstring_view argv : Params())
 		{
 			if (argv.starts_with(L"xoxb-"))
 			{

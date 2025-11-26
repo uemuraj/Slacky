@@ -2,6 +2,7 @@
 
 #include <string>
 #include <string_view>
+#include <span>
 
 #if defined(GetMessage)
 #pragma push_macro("GetMessage")
@@ -34,6 +35,17 @@ namespace slacky
 		std::wstring GetToken() const;
 		std::wstring GetChannel() const;
 		std::wstring GetMessage() const;
+
+	private:
+		decltype(auto) Params() const
+		{
+			if (m_argc > 1)
+			{
+				return std::span(m_argv + 1, static_cast<size_t>(m_argc - 1));
+			}
+
+			return std::span(m_argv, 0);
+		}
 	};
 }
 
