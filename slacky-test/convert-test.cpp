@@ -34,6 +34,19 @@ namespace slacky
 		EXPECT_TRUE(Narrow(L"").empty());
 	}
 
+	TEST(Widen, RoundTrip_Japanese)
+	{
+		// Create a multibyte string from a wide string then widen it back and compare
+		auto mbs = Narrow(L"‚±‚ñ‚É‚¿‚Í");
+		auto w = Widen(mbs);
+		EXPECT_STREQ(w.c_str(), L"‚±‚ñ‚É‚¿‚Í");
+	}
+
+	TEST(Widen, Empty)
+	{
+		EXPECT_TRUE(Widen("").empty());
+	}
+
 	TEST(UrlFrom, Basic)
 	{
 		auto uri = UrlFrom(__FILEW__);

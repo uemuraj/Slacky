@@ -153,6 +153,7 @@
     <ClCompile Include="options.cpp" />
     <ClCompile Include="shortcut.cpp" />
     <ClCompile Include="slacky.cpp" />
+    <ClCompile Include="textfile.cpp" />
     <ClCompile Include="toast.cpp" />
     <ClCompile Include="winmain.cpp" />
   </ItemGroup>
@@ -164,6 +165,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="shortcut.h" />
     <ClInclude Include="slacky.h" />
+    <ClInclude Include="textfile.h" />
     <ClInclude Include="toast.h" />
   </ItemGroup>
   <ItemGroup>

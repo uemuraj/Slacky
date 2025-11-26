@@ -9,6 +9,7 @@
     <ClCompile Include="shortcut.cpp" />
     <ClCompile Include="toast.cpp" />
     <ClCompile Include="options.cpp" />
+    <ClCompile Include="textfile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="json.h" />
@@ -19,6 +20,7 @@
     <ClInclude Include="toast.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="options.h" />
+    <ClInclude Include="textfile.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="slacky.rc" />
