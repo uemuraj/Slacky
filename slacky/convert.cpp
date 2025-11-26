@@ -110,6 +110,46 @@ namespace slacky
 		return {};
 	}
 
+	std::u8string UrlEncode(std::u8string_view str)
+	{
+		if (!str.empty())
+		{
+			std::u8string encoded;
+			encoded.reserve(str.size() * 3); // 最悪ケースでも余裕あり
+
+			// * RFC 3986 の "unreserved" + よく使う ~ はそのまま
+			// * スペースは + に変換
+			// * それ以外は %HH の形式でエンコード
+
+			static const char8_t hex[] = u8"0123456789ABCDEF";
+
+			for (char8_t c : str)
+			{
+				if ((c >= 'A' && c <= 'Z') ||
+					(c >= 'a' && c <= 'z') ||
+					(c >= '0' && c <= '9') ||
+					c == '-' || c == '_' || c == '.' || c == '~')
+				{
+					encoded.push_back(c);
+				}
+				else if (c == ' ')
+				{
+					encoded.push_back(u8'+');
+				}
+				else
+				{
+					encoded.push_back(u8'%');
+					encoded.push_back(hex[c >> 4]);
+					encoded.push_back(hex[c & 0x0F]);
+				}
+			}
+
+			return encoded;
+		}
+
+		return {};
+	}
+
 	std::wstring UrlFrom(const std::filesystem::path & path)
 	{
 		if (!path.empty())

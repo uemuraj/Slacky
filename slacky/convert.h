@@ -20,6 +20,9 @@ namespace slacky
 	std::wstring Widen(std::string_view mbs);
 	std::string Narrow(std::wstring_view wcs);
 
+	// URL エンコードを行う
+	std::u8string UrlEncode(std::u8string_view str);
+
 	// ファイルパスを file:/// 形式の URI に変換する
 	std::wstring UrlFrom(const std::filesystem::path & path);
 }

@@ -107,10 +107,9 @@ namespace slacky
 			return ParseResponse(response);
 		}
 
-		bool Post(const wchar_t * path, std::wstring_view form)
+		bool Post(const wchar_t * path, std::u8string_view content)
 		{
-			auto content = ConvertFrom(form);
-			auto response = Https::Post(path, content.data(), (uint32_t) content.size());
+			auto response = Https::Post(path, (void *) content.data(), (uint32_t) content.size());
 			return ParseResponse(response);
 		}
 
@@ -192,7 +191,16 @@ namespace slacky
 
 	bool SlackBot::Post(std::wstring_view channel, std::wstring_view message)
 	{
-		if (m_api->Post(L"/api/chat.postMessage", std::format(L"channel={}&text={}", channel, message)))
+		auto u8channel = ConvertFrom(channel);
+		auto u8message = ConvertFrom(message);
+
+		std::u8string content;
+		content += u8"channel=";
+		content += UrlEncode(u8channel);
+		content += u8"&text=";
+		content += UrlEncode(u8message);
+
+		if (m_api->Post(L"/api/chat.postMessage", content))
 		{
 			if (m_name.empty() || m_icon.empty())
 			{
