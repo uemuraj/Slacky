@@ -21,6 +21,13 @@ slacky.exe <token> <channel> <message>
 - channel ... 投稿先のチャネル ID（例：Cxxxxxx）
 - message ... メッセージ本文
 
+token は環境変数 SLACKY_TOKEN に設定しておくこともできます。その場合はコマンドライン引数から省略可能です。
+message は、メッセージ本文の代わりにメッセージを書いたテキストファイルの名前を指定することもできます。ファイル名の先頭に @ を付けて指定します。
+
+```console
+slacky.exe <channel> @message.txt
+```
+
 
 ## チャネル ID の取得方法
 チャネル ID は「チャネルの詳細」から確認できます。チャネルを表示した時の URL の末尾と同じです。
