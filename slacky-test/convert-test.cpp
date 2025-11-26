@@ -60,4 +60,27 @@ namespace slacky
 		EXPECT_FALSE(uri.empty());
 		EXPECT_NE(uri.find(L"%20"), std::wstring::npos);
 	}
+
+	TEST(UrlEncode, Empty)
+	{
+		EXPECT_TRUE(UrlEncode(u8"").empty());
+	}
+
+	TEST(UrlEncode, UnreservedRemain)
+	{
+		// unreserved characters and ~ should remain unencoded
+		EXPECT_STREQ(ConvertFrom(UrlEncode(u8"AZaz09-_.~")).c_str(), L"AZaz09-_.~");
+	}
+
+	TEST(UrlEncode, SpaceToPlus)
+	{
+		EXPECT_STREQ(ConvertFrom(UrlEncode(u8" ")).c_str(), L"+");
+	}
+
+	TEST(UrlEncode, PercentEncode)
+	{
+		// A set of characters that should be percent-encoded
+		auto encoded = UrlEncode(u8"!*'();:@&=+$,/?#[]");
+		EXPECT_STREQ(ConvertFrom(encoded).c_str(), L"%21%2A%27%28%29%3B%3A%40%26%3D%2B%24%2C%2F%3F%23%5B%5D");
+	}
 }
