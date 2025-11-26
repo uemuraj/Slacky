@@ -102,8 +102,14 @@ namespace slacky
 
 		if (size > 3)
 		{
+			// UTF-32 は LE/BE どちもサポートしないため例外とする
+			if ((data[0] == 0xFEFF && data[1] == 0x0000) || (data[0] == 0x0000 && data[1] == 0xFFFE))
+			{
+				throw std::runtime_error("UTF-32 encoding is not supported.");
+			}
+
 			// UTF-16 LE BOM
-			if (*data == 0xFFFE)
+			if (*data == 0xFEFF)
 			{
 				// BOM の分を除いた部分を複製して返す
 				const auto wcs_size = (size - 2) / sizeof(wchar_t);
@@ -112,21 +118,12 @@ namespace slacky
 			}
 
 			// UTF-16 BE BOM
-			if (*data == 0xFEFF)
+			if (*data == 0xFFFE)
 			{
-				// BOM の分を除いた部分のバイト順を入れ替えて詰めたものを返す
+				// BOM の分を除いた部分を変換して返す
 				const auto wcs_size = (size - 2) / sizeof(wchar_t);
 				const auto wcs_data = (data + 1);
-
-				std::wstring wcs;
-				wcs.reserve(wcs_size);
-
-				for (wchar_t ch : std::span{ wcs_data, wcs_size })
-				{
-					wcs.push_back(_byteswap_ushort(ch));
-				}
-
-				return wcs;
+				return ConvertUTF16Endian({ wcs_data, wcs_size });
 			}
 
 			// UTF-8 BOM
@@ -139,15 +136,12 @@ namespace slacky
 					// BOM の分を除いた部分をコード変換して返す
 					const auto utf8_size = size - 3;
 					const auto utf8_data = data + 3;
-
-					std::u8string_view u8s{ utf8_data, utf8_size };
-
-					return ConvertFrom(u8s);
+					return ConvertFrom({ utf8_data, utf8_size });
 				}
 			}
 		}
 
-		// BOM がない場合、全体をワイド文字列として扱う
+		// BOM がない場合、全体をワイド文字列として変換して返す
 
 		return Widen({ m_file->data<char>(), size });
 	}

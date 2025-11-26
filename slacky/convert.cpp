@@ -60,6 +60,11 @@ namespace slacky
 		return {};
 	}
 
+
+	//
+	// ワイド文字列とマルチバイト文字列の相互変換：
+	//
+
 	std::wstring Widen(std::string_view mbs)
 	{
 		if (!mbs.empty())
@@ -110,6 +115,7 @@ namespace slacky
 		return {};
 	}
 
+
 	std::u8string UrlEncode(std::u8string_view str)
 	{
 		if (!str.empty())
@@ -149,6 +155,7 @@ namespace slacky
 
 		return {};
 	}
+
 
 	std::wstring UrlFrom(const std::filesystem::path & path)
 	{

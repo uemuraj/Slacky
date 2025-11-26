@@ -39,7 +39,20 @@ namespace slacky
 			return info->name();
 		}
 
-		void SetTestData(std::span<const std::byte> data) const
+		// 文字列リテラルをテストデータとして書き込む（終端のヌル文字は除く）
+		template <class CharT, std::size_t N>
+		void SetTestData(const CharT(&arr)[N]) const
+		{
+			WriteTestData(arr, (N - 1) * sizeof(CharT));
+		}
+
+		template <class CharT>
+		void SetTestData(const std::basic_string<CharT> & str) const
+		{
+			WriteTestData(str.data(), str.size() * sizeof(CharT));
+		}
+
+		void WriteTestData(const void * data, size_t size) const
 		{
 			// * テストコードでは書き込み失敗時のハンドルのリークを許容する
 
@@ -50,9 +63,9 @@ namespace slacky
 				throw std::system_error(::GetLastError(), std::system_category(), "CreateFileW");
 			}
 
-			auto bytes = static_cast<DWORD>(data.size());
+			DWORD written = 0;
 
-			if (!::WriteFile(hFile, data.data(), bytes, &bytes, nullptr))
+			if (!::WriteFile(hFile, data, (DWORD) size, &written, nullptr))
 			{
 				throw std::system_error(::GetLastError(), std::system_category(), "WriteFile");
 			}
@@ -63,51 +76,40 @@ namespace slacky
 
 	TEST_F(TextFileTest, ReadUtf16LE)
 	{
-		// UTF-16 LE (detected branch in TextFile implementation) を読み取れること
-			// Craft bytes so that first wchar_t value equals 0xFFFE (bytes 0xFE,0xFF),
-			// followed by little-endian UTF-16 characters 'A' and 'B' (0x41,0x00, 0x42,0x00).
-		auto data = std::vector<std::byte>{ std::byte{0xFE}, std::byte{0xFF}, std::byte{0x41}, std::byte{0x00}, std::byte{0x42}, std::byte{0x00} };
-		SetTestData(data);
+		// UTF-16 LE BOM 付きのテキストファイルから読み取れること
+		SetTestData(L"\xFEFFHello, World! こんにちは");
 
-		TextFile tf(file);
-		EXPECT_EQ(tf.ToString(), L"AB");
+		auto text = TextFile(file).ToString();
+		EXPECT_STREQ(text.c_str(), L"Hello, World! こんにちは");
 	}
 
-	// UTF-16 BE (detected branch in TextFile implementation) を読み取れること
 	TEST_F(TextFileTest, ReadUtf16BE)
 	{
-		// Craft bytes so that first wchar_t value equals 0xFEFF (bytes 0xFF,0xFE),
-		// followed by big-endian UTF-16 characters for 'A' and 'B' (0x00,0x41, 0x00,0x42).
-		auto data = std::vector<std::byte>{ std::byte{0xFF}, std::byte{0xFE}, std::byte{0x00}, std::byte{0x41}, std::byte{0x00}, std::byte{0x42} };
-		SetTestData(data);
+		// UTF-16 BE BOM 付きのテキストファイルから読み取れること
+		SetTestData(ConvertUTF16Endian(L"\xFEFFHello, World! こんにちは"));
 
-		TextFile tf(file);
-		EXPECT_EQ(tf.ToString(), L"AB");
+		auto text = TextFile(file).ToString();
+		EXPECT_STREQ(text.c_str(), L"Hello, World! こんにちは");
 	}
 
-	// UTF-8 with BOM を読み取れること
 	TEST_F(TextFileTest, ReadUtf8WithBOM)
 	{
-		auto data = std::vector<std::byte>{ std::byte{0xEF}, std::byte{0xBB}, std::byte{0xBF}, std::byte{'A'}, std::byte{'B'} };
-		SetTestData(data);
+		// UTF-8 BOM 付きのテキストファイルから読み取れること
+		auto utf8 = ConvertFrom(L"Hello, World! こんにちは");
+		utf8.insert(utf8.begin(), { 0xEF, 0xBB, 0xBF }); // BOM を先頭に追加
+		SetTestData(utf8);
 
-		TextFile tf(file);
-		EXPECT_EQ(tf.ToString(), L"AB");
+		auto text = TextFile(file).ToString();
+		EXPECT_STREQ(text.c_str(), L"Hello, World! こんにちは");
 	}
 
-	// ASCII (no BOM) を読み取れること
-	TEST_F(TextFileTest, ReadAsciiNoBOM)
+	TEST_F(TextFileTest, ReadShiftJIS)
 	{
-		const std::string s = "Hello";
-		auto bytes = std::vector<std::byte>(s.size());
-		for (size_t i = 0; i < s.size(); ++i)
-		{
-			bytes[i] = static_cast<std::byte>(s[i]);
-		}
+		// Shift_JIS のテキストファイルから読み取れること
+		auto sjis = Narrow(L"Hello, World! こんにちは");
+		SetTestData(sjis);
 
-		SetTestData(bytes);
-
-		TextFile tf(file);
-		EXPECT_EQ(tf.ToString(), L"Hello");
+		auto text = TextFile(file).ToString();
+		EXPECT_STREQ(text.c_str(), L"Hello, World! こんにちは");
 	}
 }
